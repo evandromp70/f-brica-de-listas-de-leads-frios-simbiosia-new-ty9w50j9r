@@ -30,8 +30,9 @@ routerAdd(
       return e.internalServerError('Credenciais do funil não configuradas')
     }
 
-    // Autentica na API do funil (PocketBase)
+    // Autentica na API do funil (PocketBase) e pega o id do usuário (owner)
     let token = ''
+    let ownerId = ''
     try {
       const res = $http.send({
         url: baseUrl + '/api/collections/users/auth-with-password',
@@ -45,6 +46,7 @@ routerAdd(
         return e.internalServerError('Não foi possível autenticar no funil')
       }
       token = res.json.token
+      ownerId = res.json.record && res.json.record.id ? res.json.record.id : ''
     } catch (err) {
       $app.logger().error('funil auth erro', { err: String(err) })
       return e.internalServerError('Não foi possível conectar ao funil')
@@ -113,7 +115,7 @@ routerAdd(
             Authorization: 'Bearer ' + token,
           },
           body: JSON.stringify({
-            owner: 'jose@simbiosia.com.br',
+            owner: ownerId,
             nome_empresa: razao,
             contato_nome: '',
             contato_email: emailC || '',
