@@ -77,6 +77,11 @@ routerAdd(
         .filter(Boolean)
         .join(' | ')
 
+      // Campos estruturados de segmentação (para filtros e atribuição em lote)
+      const segmento = setor || ''
+      const ufCampo = uf || ''
+      const cidadeCampo = cidade || ''
+
       // Verifica duplicata (mesmo nome de empresa no funil)
       let existe = false
       try {
@@ -122,6 +127,10 @@ routerAdd(
             contato_telefone: tel || '',
             origem: 'outbound',
             etapa: 'lista',
+            segmento: segmento,
+            uf: ufCampo,
+            cidade: cidadeCampo,
+            lista_origem: nomeLista,
             observacoes: obs,
           }),
           timeout: 30,
