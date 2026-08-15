@@ -66,12 +66,10 @@ export const updateLista = (id: string, data: Partial<Lista>) =>
 export const deleteLista = (id: string) => pb.collection('listas').delete(id)
 
 export const getEmpresas = (listaId: string) =>
-  pb
-    .collection('empresas')
-    .getFullList<Empresa>({
-      filter: pb.filter('lista = {:listaId}', { listaId }),
-      sort: 'razao_social',
-    })
+  pb.collection('empresas').getFullList<Empresa>({
+    filter: pb.filter('lista = {:listaId}', { listaId }),
+    sort: 'razao_social',
+  })
 
 export const createEmpresa = (data: Partial<Empresa> & { razao_social: string; lista: string }) =>
   pb
@@ -79,12 +77,10 @@ export const createEmpresa = (data: Partial<Empresa> & { razao_social: string; l
     .create<Empresa>({ owner: (pb.authStore.record?.id as string) ?? '', ...data })
 
 export const getImportacoes = (listaId: string) =>
-  pb
-    .collection('importacoes')
-    .getFullList<Importacao>({
-      filter: pb.filter('lista = {:listaId}', { listaId }),
-      sort: '-created',
-    })
+  pb.collection('importacoes').getFullList<Importacao>({
+    filter: pb.filter('lista = {:listaId}', { listaId }),
+    sort: '-created',
+  })
 
 export const createImportacao = (data: Partial<Importacao> & { lista: string }) =>
   pb

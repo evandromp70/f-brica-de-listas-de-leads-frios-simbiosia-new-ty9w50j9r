@@ -7,6 +7,7 @@ import {
   getEmpresas,
   createEmpresa,
   createImportacao,
+  updateLista,
   Lista,
   Empresa,
 } from '@/services/fabrica'
@@ -210,6 +211,12 @@ export default function Index() {
       setArquivo(null)
       const data = await getEmpresas(listaSelecionada)
       setEmpresas(data)
+      try {
+        await updateLista(listaSelecionada, {
+          total_empresas: data.length,
+          status: 'em_preparacao',
+        })
+      } catch (_) {}
       await loadListas()
     } catch (e) {
       setError('Não foi possível importar o CSV. Verifique o formato (separador ;).')
