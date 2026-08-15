@@ -109,3 +109,12 @@ export const exportarLista = (listaId: string) =>
     method: 'POST',
     body: JSON.stringify({ listaId }),
   })
+
+export const enviarParaFunil = (listaId: string) =>
+  pb.send<{ criados: number; duplicados: number; total: number; lista: string }>(
+    '/backend/v1/fabrica/enviar-funil',
+    {
+      method: 'POST',
+      body: JSON.stringify({ listaId }),
+    },
+  )

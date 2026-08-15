@@ -10,6 +10,7 @@ import {
   updateLista,
   gerarDaBase,
   exportarLista,
+  enviarParaFunil,
   Lista,
   Empresa,
 } from '@/services/fabrica'
@@ -55,6 +56,7 @@ export default function Index() {
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [importando, setImportando] = useState(false)
   const [exportando, setExportando] = useState(false)
+  const [enviandoFunil, setEnviandoFunil] = useState(false)
 
   // empresas da lista selecionada
   const [empresas, setEmpresas] = useState<Empresa[]>([])
@@ -393,6 +395,32 @@ export default function Index() {
     }
   }
 
+  const onEnviarFunil = async (l: Lista) => {
+    if (
+      !confirm(
+        `Enviar "${l.nome}" para o Funil MKT & Vendas?\n\n` +
+          `Cada empresa vira um lead (origem outbound, etapa Lista) no funil.`,
+      )
+    ) {
+      return
+    }
+    setError('')
+    setNotice('')
+    setEnviandoFunil(true)
+    try {
+      const data = await enviarParaFunil(l.id)
+      setNotice(
+        `Enviado para o funil: ${data.criados} leads criados, ${data.duplicados} duplicados ignorados.`,
+      )
+      setTimeout(() => setNotice(''), 5000)
+      await loadListas()
+    } catch (e) {
+      setError('Não foi possível enviar para o funil.')
+    } finally {
+      setEnviandoFunil(false)
+    }
+  }
+
   const onExcluir = async (id: string) => {
     if (!confirm('Excluir esta lista e todas as empresas dela?')) return
     try {
@@ -628,6 +656,15 @@ export default function Index() {
                         className="whitespace-nowrap"
                       >
                         {exportando ? 'Exportando...' : 'Exportar CSV'}
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => onEnviarFunil(l)}
+                        disabled={enviandoFunil}
+                        className="whitespace-nowrap bg-[#bde038] text-[#10454f] hover:bg-[#a5cc2c]"
+                      >
+                        {enviandoFunil ? 'Enviando...' : 'Enviar para o funil'}
                       </Button>
                       <Button
                         variant="ghost"
