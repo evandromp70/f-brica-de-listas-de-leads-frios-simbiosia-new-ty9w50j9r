@@ -216,7 +216,9 @@ export default function Index() {
           total_empresas: data.length,
           status: 'em_preparacao',
         })
-      } catch (_) {}
+      } catch (_) {
+        // falha ao atualizar total não bloqueia a importação
+      }
       await loadListas()
     } catch (e) {
       setError('Não foi possível importar o CSV. Verifique o formato (separador ;).')
