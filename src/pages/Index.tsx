@@ -9,6 +9,7 @@ import {
   createImportacao,
   updateLista,
   gerarDaBase,
+  exportarLista,
   Lista,
   Empresa,
 } from '@/services/fabrica'
@@ -53,6 +54,7 @@ export default function Index() {
   const [listaSelecionada, setListaSelecionada] = useState('')
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [importando, setImportando] = useState(false)
+  const [exportando, setExportando] = useState(false)
 
   // empresas da lista selecionada
   const [empresas, setEmpresas] = useState<Empresa[]>([])
@@ -364,6 +366,33 @@ export default function Index() {
     }
   }
 
+  const onExportar = async (l: Lista) => {
+    setError('')
+    setNotice('')
+    setExportando(true)
+    try {
+      const data = await exportarLista(l.id)
+      // gera download do CSV no navegador
+      const blob = new Blob(['\uFEFF' + data.csv], {
+        type: 'text/csv;charset=utf-8',
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${l.nome.replace(/[^a-z0-9]+/gi, '_')}_rfb.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      setNotice(`Lista exportada: ${data.total} empresas.`)
+      setTimeout(() => setNotice(''), 4000)
+    } catch (e) {
+      setError('Não foi possível exportar a lista.')
+    } finally {
+      setExportando(false)
+    }
+  }
+
   const onExcluir = async (id: string) => {
     if (!confirm('Excluir esta lista e todas as empresas dela?')) return
     try {
@@ -590,6 +619,15 @@ export default function Index() {
                         className="whitespace-nowrap"
                       >
                         {importando ? 'Gerando...' : 'Gerar da base RFB'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onExportar(l)}
+                        disabled={exportando}
+                        className="whitespace-nowrap"
+                      >
+                        {exportando ? 'Exportando...' : 'Exportar CSV'}
                       </Button>
                       <Button
                         variant="ghost"
