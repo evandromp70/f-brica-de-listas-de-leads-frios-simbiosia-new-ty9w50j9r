@@ -92,16 +92,6 @@ export const gerarDaBase = (listaId: string) =>
   pb.send<{
     status: string
     csv?: string
-    metadados?: { recorte: Record<string, string | number>; fonte: string; origem: string; total: number; idade_min_aplicada: string }
-  }>('/backend/v1/fabrica/gerar-da-base', {
-    method: 'POST',
-    body: JSON.stringify({ listaId }),
-  })
-=======
-export const gerarDaBase = (listaId: string) =>
-  pb.send<{
-    status: string
-    csv?: string
     metadados?: {
       recorte: Record<string, string | number>
       fonte: string
