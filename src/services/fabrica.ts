@@ -88,6 +88,32 @@ export const createImportacao = (data: Partial<Importacao> & { lista: string }) 
     .collection('importacoes')
     .create<Importacao>({ owner: (pb.authStore.record?.id as string) ?? '', ...data })
 
+export const gerarDaBase = (listaId: string) =>
+  pb.send<{
+    status: string
+    csv?: string
+    metadados?: { recorte: Record<string, string | number>; fonte: string; origem: string; total: number; idade_min_aplicada: string }
+  }>('/backend/v1/fabrica/gerar-da-base', {
+    method: 'POST',
+    body: JSON.stringify({ listaId }),
+  })
+=======
+export const gerarDaBase = (listaId: string) =>
+  pb.send<{
+    status: string
+    csv?: string
+    metadados?: {
+      recorte: Record<string, string | number>
+      fonte: string
+      origem: string
+      total: number
+      idade_min_aplicada: string
+    }
+  }>('/backend/v1/fabrica/gerar-da-base', {
+    method: 'POST',
+    body: JSON.stringify({ listaId }),
+  })
+
 export const exportarLista = (listaId: string) =>
   pb.send<{ csv: string; nome: string }>('/backend/v1/fabrica/exportar', {
     method: 'POST',

@@ -8,6 +8,7 @@ import {
   createEmpresa,
   createImportacao,
   updateLista,
+  gerarDaBase,
   Lista,
   Empresa,
 } from '@/services/fabrica'
@@ -244,14 +245,8 @@ export default function Index() {
     setNotice('')
     setImportando(true)
     try {
-      // 1. Requisita ao backend a URL/instruções da base oficial (e o script)
-      const resp = await fetch('/backend/v1/fabrica/gerar-da-base', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listaId: l.id }),
-      })
-      if (!resp.ok) throw new Error('Falha ao gerar da base')
-      const data = await resp.json()
+      // 1. Requisita ao backend o CSV do recorte (token injetado pelo SDK)
+      const data = await gerarDaBase(l.id)
       // 2. O backend retorna o CSV pronto (processado pelo script) ou um aviso
       if (data.status === 'pronto' && data.csv) {
         // Salva o CSV em blob e importa pelo fluxo normal
