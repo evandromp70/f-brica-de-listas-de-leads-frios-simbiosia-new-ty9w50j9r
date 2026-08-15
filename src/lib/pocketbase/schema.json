@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-15T17:54:30.362Z",
+  "generatedAt": "2026-08-15T18:38:16.461Z",
   "collections": [
     {
       "name": "users",
@@ -29,14 +29,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -79,7 +84,12 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["rfb", "planilha", "api", "misto"]
+          "selectValues": [
+            "rfb",
+            "planilha",
+            "api",
+            "misto"
+          ]
         },
         {
           "name": "setor",
@@ -104,7 +114,12 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["rascunho", "em_preparacao", "pronta", "exportada"]
+          "selectValues": [
+            "rascunho",
+            "em_preparacao",
+            "pronta",
+            "exportada"
+          ]
         },
         {
           "name": "total_empresas",
@@ -117,14 +132,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "idade_min_anos",
@@ -133,7 +153,9 @@
           "system": false
         }
       ],
-      "indexes": ["CREATE INDEX idx_listas_owner ON listas (owner)"]
+      "indexes": [
+        "CREATE INDEX idx_listas_owner ON listas (owner)"
+      ]
     },
     {
       "name": "empresas",
@@ -243,14 +265,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -318,7 +345,11 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["processando", "concluida", "falha"]
+          "selectValues": [
+            "processando",
+            "concluida",
+            "falha"
+          ]
         },
         {
           "name": "detalhes",
@@ -331,17 +362,24 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": ["CREATE INDEX idx_importacoes_lista ON importacoes (lista)"]
+      "indexes": [
+        "CREATE INDEX idx_importacoes_lista ON importacoes (lista)"
+      ]
     },
     {
       "name": "regras_icp",
@@ -402,17 +440,24 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": ["CREATE INDEX idx_regras_icp_owner ON regras_icp (owner)"]
+      "indexes": [
+        "CREATE INDEX idx_regras_icp_owner ON regras_icp (owner)"
+      ]
     }
   ]
 }

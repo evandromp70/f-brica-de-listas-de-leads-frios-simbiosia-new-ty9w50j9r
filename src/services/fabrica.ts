@@ -77,6 +77,9 @@ export const createEmpresa = (data: Partial<Empresa> & { razao_social: string; l
     .collection('empresas')
     .create<Empresa>({ owner: (pb.authStore.record?.id as string) ?? '', ...data })
 
+export const updateEmpresa = (id: string, data: Partial<Empresa>) =>
+  pb.collection('empresas').update<Empresa>(id, data)
+
 export const getImportacoes = (listaId: string) =>
   pb.collection('importacoes').getFullList<Importacao>({
     filter: pb.filter('lista = {:listaId}', { listaId }),
@@ -118,3 +121,22 @@ export const enviarParaFunil = (listaId: string) =>
       body: JSON.stringify({ listaId }),
     },
   )
+
+export type SugestaoEnriquecimento = {
+  email?: string
+  telefone?: string
+  linkedin?: string
+  confianca?: 'alta' | 'media' | 'baixa'
+  fonte?: string
+  observacao?: string
+}
+
+export const enriquecerEmpresa = (empresaId: string) =>
+  pb.send<{
+    empresaId: string
+    sugestao: SugestaoEnriquecimento
+    atual: { email?: string; telefone?: string; linkedin?: string }
+  }>('/backend/v1/fabrica/enriquecer', {
+    method: 'POST',
+    body: JSON.stringify({ empresaId }),
+  })

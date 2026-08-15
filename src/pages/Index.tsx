@@ -11,6 +11,9 @@ import {
   gerarDaBase,
   exportarLista,
   enviarParaFunil,
+  enriquecerEmpresa,
+  updateEmpresa,
+  SugestaoEnriquecimento,
   Lista,
   Empresa,
 } from '@/services/fabrica'
@@ -61,6 +64,14 @@ export default function Index() {
   // empresas da lista selecionada
   const [empresas, setEmpresas] = useState<Empresa[]>([])
   const [empresaExpandida, setEmpresaExpandida] = useState('')
+
+  // enriquecimento com IA
+  const [enriquecendoId, setEnriquecendoId] = useState('')
+  const [sugestaoModal, setSugestaoModal] = useState<{
+    empresa: Empresa
+    sugestao: SugestaoEnriquecimento
+  } | null>(null)
+  const [aplicandoSugestao, setAplicandoSugestao] = useState(false)
 
   const loadListas = async () => {
     setLoading(true)
@@ -421,6 +432,42 @@ export default function Index() {
     }
   }
 
+  const onEnriquecer = async (e: Empresa) => {
+    setError('')
+    setNotice('')
+    setEnriquecendoId(e.id)
+    try {
+      const data = await enriquecerEmpresa(e.id)
+      setSugestaoModal({ empresa: e, sugestao: data.sugestao })
+    } catch (err) {
+      setError('Não foi possível enriquecer esta empresa agora.')
+    } finally {
+      setEnriquecendoId('')
+    }
+  }
+
+  const onAplicarSugestao = async () => {
+    if (!sugestaoModal) return
+    setAplicandoSugestao(true)
+    try {
+      await updateEmpresa(sugestaoModal.empresa.id, {
+        email: sugestaoModal.sugestao.email || '',
+        telefone: sugestaoModal.sugestao.telefone || '',
+        linkedin: sugestaoModal.sugestao.linkedin || '',
+      })
+      setNotice('Sugestão aplicada à empresa.')
+      setTimeout(() => setNotice(''), 4000)
+      const listaId = sugestaoModal.empresa.lista
+      setSugestaoModal(null)
+      const data = await getEmpresas(listaId)
+      setEmpresas(data)
+    } catch (err) {
+      setError('Não foi possível aplicar a sugestão.')
+    } finally {
+      setAplicandoSugestao(false)
+    }
+  }
+
   const onExcluir = async (id: string) => {
     if (!confirm('Excluir esta lista e todas as empresas dela?')) return
     try {
@@ -588,6 +635,74 @@ export default function Index() {
       {error && <p className="text-sm text-red-600">{error}</p>}
       {notice && <p className="text-sm text-green-700">{notice}</p>}
 
+      {/* Modal de revisão da sugestão de enriquecimento */}
+      {sugestaoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-[#10454f]">
+              Sugestão de contato — {sugestaoModal.empresa.razao_social}
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              A IA sugeriu os contatos abaixo. Revise antes de aplicar (confiança:{' '}
+              <Badge
+                variant={
+                  sugestaoModal.sugestao.confianca === 'alta'
+                    ? 'default'
+                    : sugestaoModal.sugestao.confianca === 'media'
+                      ? 'secondary'
+                      : 'outline'
+                }
+              >
+                {sugestaoModal.sugestao.confianca ?? '—'}
+              </Badge>
+              )
+            </p>
+            <div className="mt-4 space-y-3 text-sm">
+              <div>
+                <p className="font-medium">E-mail</p>
+                <p className="text-muted-foreground">{sugestaoModal.sugestao.email || '—'}</p>
+              </div>
+              <div>
+                <p className="font-medium">Telefone</p>
+                <p className="text-muted-foreground">{sugestaoModal.sugestao.telefone || '—'}</p>
+              </div>
+              <div>
+                <p className="font-medium">LinkedIn</p>
+                <p className="text-muted-foreground">{sugestaoModal.sugestao.linkedin || '—'}</p>
+              </div>
+              {sugestaoModal.sugestao.fonte && (
+                <div>
+                  <p className="font-medium">Fonte estimada</p>
+                  <p className="text-muted-foreground">{sugestaoModal.sugestao.fonte}</p>
+                </div>
+              )}
+              {sugestaoModal.sugestao.observacao && (
+                <div>
+                  <p className="font-medium">Observação</p>
+                  <p className="text-muted-foreground">{sugestaoModal.sugestao.observacao}</p>
+                </div>
+              )}
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setSugestaoModal(null)}
+                disabled={aplicandoSugestao}
+              >
+                Descartar
+              </Button>
+              <Button
+                className="bg-[#10454f] hover:bg-[#0d3942]"
+                onClick={onAplicarSugestao}
+                disabled={aplicandoSugestao}
+              >
+                {aplicandoSugestao ? 'Aplicando...' : 'Aplicar sugestão'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Lista de listas */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -686,9 +801,24 @@ export default function Index() {
                         <div className="max-h-72 space-y-2 overflow-y-auto">
                           {empresas.map((e) => (
                             <div key={e.id} className="rounded border p-2 text-sm">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between gap-2">
                                 <p className="font-medium">{e.razao_social}</p>
-                                <Badge variant="outline">{e.porte || '—'}</Badge>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline">{e.porte || '—'}</Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs text-[#10454f]"
+                                    onClick={() => onEnriquecer(e)}
+                                    disabled={enriquecendoId === e.id}
+                                  >
+                                    {enriquecendoId === e.id
+                                      ? 'Buscando...'
+                                      : e.email || e.telefone || e.linkedin
+                                        ? 'Reenriquecer'
+                                        : 'Enriquecer com IA'}
+                                  </Button>
+                                </div>
                               </div>
                               <p className="text-xs text-muted-foreground">
                                 {e.cnpj || '—'} · {e.cidade || '—'}/{e.uf || '—'} · {e.cnae || ''}
@@ -696,6 +826,9 @@ export default function Index() {
                               {e.email && <p className="text-xs">{e.email}</p>}
                               {e.telefone && (
                                 <p className="text-xs text-muted-foreground">{e.telefone}</p>
+                              )}
+                              {e.linkedin && (
+                                <p className="text-xs text-muted-foreground">{e.linkedin}</p>
                               )}
                             </div>
                           ))}
