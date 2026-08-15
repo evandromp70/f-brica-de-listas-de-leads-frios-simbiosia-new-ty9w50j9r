@@ -253,7 +253,7 @@ export default function Index() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Criar lista */}
-        <Card>
+        <Card id="nova-lista">
           <CardHeader>
             <CardTitle className="text-base">Nova lista</CardTitle>
             <CardDescription>
@@ -323,8 +323,11 @@ export default function Index() {
                   />
                 </div>
               </div>
-              <Button type="submit" className="bg-[#10454f] hover:bg-[#0d3942]">
-                Criar lista
+              <Button
+                type="submit"
+                className="w-full bg-[#bde038] font-semibold text-[#10454f] hover:bg-[#a5cc2c]"
+              >
+                + Criar lista
               </Button>
             </form>
           </CardContent>
@@ -384,9 +387,20 @@ export default function Index() {
 
       {/* Lista de listas */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Listas ({listas.length})</CardTitle>
-          <CardDescription>Clique em uma lista para ver as empresas.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-base">Listas ({listas.length})</CardTitle>
+            <CardDescription>Clique em uma lista para ver as empresas.</CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              document.getElementById('nova-lista')?.scrollIntoView({ behavior: 'smooth' })
+            }
+          >
+            + Nova lista
+          </Button>
         </CardHeader>
         <CardContent>
           {loading ? (
