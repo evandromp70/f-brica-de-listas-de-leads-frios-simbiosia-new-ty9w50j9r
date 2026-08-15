@@ -46,6 +46,7 @@ export default function Index() {
   const [setor, setSetor] = useState('')
   const [porte, setPorte] = useState('')
   const [uf, setUf] = useState('')
+  const [idadeMin, setIdadeMin] = useState<number>(3)
 
   // upload
   const [listaSelecionada, setListaSelecionada] = useState('')
@@ -88,6 +89,7 @@ export default function Index() {
         setor,
         porte,
         uf,
+        idade_min_anos: idadeMin,
         status: 'rascunho',
         total_empresas: 0,
       })
@@ -96,6 +98,7 @@ export default function Index() {
       setSetor('')
       setPorte('')
       setUf('')
+      setIdadeMin(3)
       setListaSelecionada(nova.id)
       setNotice('Lista criada. Agora importe o CSV.')
       setTimeout(() => setNotice(''), 3000)
@@ -227,6 +230,145 @@ export default function Index() {
     }
   }
 
+  const onGerarDaBase = async (l: Lista) => {
+    if (
+      !confirm(
+        `Gerar a lista "${l.nome}" a partir da base oficial RFB?\n\n` +
+          `Recorte: ${l.setor || 'Todos'} · ${l.porte || 'Todos'} · ${l.uf || 'BR'} · ${l.idade_min_anos ?? 3}+ anos\n\n` +
+          'O sistema vai baixar a base oficial (se ainda não tiver), aplicar os filtros do ICP e importar as empresas. Isso pode levar alguns minutos.',
+      )
+    ) {
+      return
+    }
+    setError('')
+    setNotice('')
+    setImportando(true)
+    try {
+      // 1. Requisita ao backend a URL/instruções da base oficial (e o script)
+      const resp = await fetch('/backend/v1/fabrica/gerar-da-base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listaId: l.id }),
+      })
+      if (!resp.ok) throw new Error('Falha ao gerar da base')
+      const data = await resp.json()
+      // 2. O backend retorna o CSV pronto (processado pelo script) ou um aviso
+      if (data.status === 'pronto' && data.csv) {
+        // Salva o CSV em blob e importa pelo fluxo normal
+        const blob = new Blob([data.csv], { type: 'text/csv' })
+        const arquivo = new File([blob], `${l.nome}-rfb.csv`, { type: 'text/csv' })
+        setArquivo(arquivo)
+        setListaSelecionada(l.id)
+        // dispara a importação programaticamente (reuso)
+        await onImportarComArquivo(l.id, arquivo)
+      } else if (data.status === 'aguardando_base') {
+        setNotice(
+          'Para gerar a lista, primeiro baixe a base oficial RFB (instruções no aviso) e envie o .zip pelo campo "Importar base RFB".',
+        )
+      } else {
+        setNotice('A base oficial está sendo processada. Isso pode levar alguns minutos.')
+      }
+    } catch (e) {
+      setError('Não foi possível gerar a lista da base RFB.')
+    } finally {
+      setImportando(false)
+    }
+  }
+
+  const onImportarComArquivo = async (listaId: string, arquivo: File) => {
+    try {
+      const texto = await arquivo.text()
+      const linhas = texto.split(/\r?\n/).filter((l) => l.trim() !== '')
+      if (linhas.length < 2) throw new Error('CSV vazio')
+      const cabecalho = linhas[0].split(';').map(normalizar)
+      const mapCol = (nomes: string[]) => cabecalho.findIndex((h) => nomes.includes(h))
+
+      const iCnpj = mapCol(['cnpj'])
+      const iRazao = mapCol(['razaosocial', 'razaosocial', 'nome', 'empresa'])
+      const iFantasia = mapCol(['nomefantasia', 'fantasia'])
+      const iPorte = mapCol(['porte'])
+      const iCnae = mapCol(['cnae', 'cnaeprincipal'])
+      const iSetor = mapCol(['setor', 'segmento'])
+      const iUf = mapCol(['uf', 'estado'])
+      const iCidade = mapCol(['cidade', 'municipio'])
+      const iInicio = mapCol(['datainicio', 'dataabertura', 'inicioatividade'])
+      const iEmail = mapCol(['email', 'contatoemail'])
+      const iTel = mapCol(['telefone', 'contatotelefone', 'dddtelefone'])
+      const iLinkedin = mapCol(['linkedin', 'urllinkedin'])
+
+      let importadas = 0,
+        duplicadas = 0,
+        erros = 0
+      const vistos = new Set<string>()
+
+      for (let i = 1; i < linhas.length; i++) {
+        const cols = linhas[i].split(';')
+        const val = (idx: number) => (idx >= 0 && idx < cols.length ? cols[idx].trim() : '')
+        const razao = val(iRazao) || val(iFantasia)
+        const cnpj = val(iCnpj)
+        if (!razao) {
+          erros++
+          continue
+        }
+        const chave = cnpj || razao
+        if (vistos.has(chave)) {
+          duplicadas++
+          continue
+        }
+        vistos.add(chave)
+        try {
+          await createEmpresa({
+            lista: listaId,
+            cnpj,
+            razao_social: razao,
+            nome_fantasia: val(iFantasia),
+            porte: val(iPorte),
+            cnae: val(iCnae),
+            setor: val(iSetor),
+            uf: val(iUf),
+            cidade: val(iCidade),
+            data_inicio: val(iInicio),
+            email: val(iEmail),
+            telefone: val(iTel),
+            linkedin: val(iLinkedin),
+          })
+          importadas++
+        } catch (e) {
+          erros++
+        }
+      }
+
+      await createImportacao({
+        lista: listaId,
+        arquivo: arquivo.name,
+        total_linhas: linhas.length - 1,
+        importadas,
+        duplicadas,
+        erros,
+        status: 'concluida',
+        detalhes: `Importadas: ${importadas}, duplicadas: ${duplicadas}, erros: ${erros}`,
+      })
+
+      setNotice(
+        `Importação concluída: ${importadas} empresas, ${duplicadas} duplicadas, ${erros} erros.`,
+      )
+      setTimeout(() => setNotice(''), 4000)
+      const data = await getEmpresas(listaId)
+      setEmpresas(data)
+      try {
+        await updateLista(listaId, {
+          total_empresas: data.length,
+          status: 'em_preparacao',
+        })
+      } catch (_) {
+        // falha ao atualizar total não bloqueia a importação
+      }
+      await loadListas()
+    } catch (e) {
+      setError('Não foi possível importar o CSV. Verifique o formato (separador ;).')
+    }
+  }
+
   const onExcluir = async (id: string) => {
     if (!confirm('Excluir esta lista e todas as empresas dela?')) return
     try {
@@ -320,6 +462,15 @@ export default function Index() {
                     value={uf}
                     onChange={(e) => setUf(e.target.value)}
                     placeholder="SP, MG, BR..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Idade mínima (anos)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={idadeMin}
+                    onChange={(e) => setIdadeMin(Number(e.target.value))}
                   />
                 </div>
               </div>
@@ -422,6 +573,7 @@ export default function Index() {
                       <p className="font-medium hover:text-[#10454f]">{l.nome}</p>
                       <p className="text-sm text-muted-foreground">
                         {l.setor || '—'} · {l.porte || '—'} · {l.uf || 'BR'} ·{' '}
+                        {l.idade_min_anos ? `${l.idade_min_anos}+ anos` : ''} ·{' '}
                         {l.total_empresas ?? 0} empresas
                       </p>
                     </button>
@@ -435,6 +587,15 @@ export default function Index() {
                       >
                         {STATUS_LABEL[l.status] ?? l.status}
                       </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onGerarDaBase(l)}
+                        disabled={importando}
+                        className="whitespace-nowrap"
+                      >
+                        {importando ? 'Gerando...' : 'Gerar da base RFB'}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

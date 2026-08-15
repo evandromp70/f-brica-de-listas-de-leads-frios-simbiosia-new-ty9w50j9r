@@ -9,6 +9,7 @@ export type Lista = {
   setor?: string
   porte?: string
   uf?: string
+  idade_min_anos?: number
   status: 'rascunho' | 'em_preparacao' | 'pronta' | 'exportada'
   total_empresas?: number
   created: string
